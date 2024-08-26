@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="32x32" href="image\logo.jpeg">
+    <title>Crypto Price Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_CLIENT_ID"
+     crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --highlight-color: #3498db;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --card-bg: #2a2a2a;
+            --shadow-color: rgba(255, 255, 255, 0.1);
+            --highlight-color: #2980b9;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .neumorphic {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 8px 8px 15px var(--shadow-color), -8px -8px 15px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+
+        .neumorphic:hover {
+            transform: translateY(-5px);
+            box-shadow: 12px 12px 20px var(--shadow-color), -12px -12px 20px var(--shadow-color);
+        }
+
+        .crypto-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .search-input, .sort-select, .pagination-button {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 15px;
+            box-shadow: inset 4px 4px 8px var(--shadow-color), inset -4px -4px 8px var(--shadow-color);
+        }
+
+        .search-input:focus, .sort-select:focus, .pagination-button:focus {
+            outline: none;
+            box-shadow: inset 6px 6px 10px var(--shadow-color), inset -6px -6px 10px var(--shadow-color);
+        }
+
+        .toggle-dark-mode {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 600px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        @keyframes slideIn {
+            from {transform: translateY(-50px);}
+            to {transform: translateY(0);}
+        }
+
+        .close {
+            color: var(--text-color);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: var(--highlight-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #chartContainer {
+            width: 100%;
+            height: 300px;
+        }
+
+        .price-up {
+            color: #4CAF50;
+            transition: color 0.3s ease;
+        }
+
+        .price-down {
+            color: #F44336;
+            transition: color 0.3s ease;
+        }
+
+        .price-change {
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .ad-container {
+            width: 100%;
+            max-width: 728px;
+            margin: 20px auto;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 4px 4px 10px var(--shadow-color), -4px -4px 10px var(--shadow-color);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <button class="toggle-dark-mode neumorphic p-3" onclick="toggleDarkMode()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    </button>
+
+    <div class="container mx-auto">
+        <h1 class="text-4xl font-bold mb-8 text-center animate__animated animate__fadeInDown">Crypto Price Tracker</h1>
+        
+        <!-- AdSense Ad Container (Top) -->
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-YOUR_ADSENSE_CLIENT_ID"
+                 data-ad-slot="YOUR_AD_SLOT_ID"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+        
+        <div class="flex flex-col md:flex-row justify-between mb-6">
+            <input type="text" id="search" placeholder="Search cryptocurrencies" class="search-input mb-4 md:mb-0 md:mr-4 w-full md:w-auto">
+            <select id="sort" class="sort-select w-full md:w-auto">
+                <option value="market_cap_desc">Market Cap (High to Low)</option>
+                <option value="market_cap_asc">Market Cap (Low to High)</option>
+                <option value="price_desc">Price (High to Low)</option>
+                <option value="price_asc">Price (Low to High)</option>
+                <option value="change_desc">24h Change (High to Low)</option>
+                <option value="change_asc">24h Change (Low to High)</option>
+            </select>
+        </div>
+
+        <div id="cryptoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cryptocurrency cards will be dynamically inserted here -->
+        </div>
+
+        <!-- AdSense Ad Container (Middle) -->
+        <div class="ad-container my-8">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-YOUR_ADSENSE_CLIENT_ID"
+                 data-ad-slot="YOUR_AD_SLOT_ID"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <div class="flex justify-center mt-8">
+            <button id="loadMore" class="pagination-button neumorphic">Load More</button>
+        </div>
+    </div>
+
+    <div id="cryptoModal" class="modal">
+        <div class="modal-content neumorphic">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle" class="text-2xl font-bold mb-4"></h2>
+            <div id="chartContainer">
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div id="modalDetails" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const cryptoList = document.getElementById('cryptoList');
+        const searchInput = document.getElementById('search');
+        const sortSelect = document.getElementById('sort');
+        const loadMoreButton = document.getElementById('loadMore');
+        const modal = document.getElementById('cryptoModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDetails = document.getElementById('modalDetails');
+        const closeModal = document.getElementsByClassName('close')[0];
+        let allCryptos = [];
+        let currentPage = 1;
+        let chart;
+        let socket;
+
+        async function fetchCryptoData(page = 1) {
+            try {
+                const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: {
+                        vs_currency: 'usd',
+                        order: 'market_cap_desc',
+                        per_page: 30,
+                        page: page,
+                        sparkline: false
+                    }
+                });
+                return response.data;
+            } catch (error) {
+                console.error('Error fetching crypto data:', error);
+                return [];
+            }
+        }
+
+        async function loadInitialData() {
+            allCryptos = await fetchCryptoData();
+            displayCryptos(allCryptos);
+            initializeWebSocket();
+        }
+
+        function displayCryptos(cryptos) {
+            cryptoList.innerHTML = '';
+            cryptos.forEach((crypto, index) => {
+                const card = document.createElement('div');
+                card.className = 'crypto-card neumorphic p-6 cursor-pointer animate__animated animate__fadeInUp';
+                card.style.animationDelay = `${index * 50}ms`;
+                card.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <img src="${crypto.image}" alt="${crypto.name}" class="w-10 h-10 mr-4">
+                        <h2 class="text-xl font-semibold">${crypto.name} (${crypto.symbol.toUpperCase()})</h2>
+                    </div>
+                    <p class="text-2xl font-bold mb-2" id="price-${crypto.symbol}">$${crypto.current_price.toLocaleString()}</p>
+                    <p class="mb-2">Market Cap: $${crypto.market_cap.toLocaleString()}</p>
+                    <p class="${crypto.price_change_percentage_24h >= 0 ? 'text-green-500' : 'text-red-500'}">
+                        24h Change: ${crypto.price_change_percentage_24h.toFixed(2)}%
+                    </p>
+                `;
+                card.addEventListener('click', () => showCryptoDetails(crypto));
+                cryptoList.appendChild(card);
+            });
+        }
+
+        async function showCryptoDetails(crypto) {
+            modalTitle.textContent = `${crypto.name} (${crypto.symbol.toUpperCase()})`;
+            modalDetails.innerHTML = `
+                <p>Current Price: $<span id="modal-price-${crypto.symbol}">${crypto.current_price.toLocaleString()}</span></p>
+                <p>Market Cap: $${crypto.market_cap.toLocaleString()}</p>
+                <p>24h Volume: $${crypto.total_volume.toLocaleString()}</p>
+                <p>24h High: $${crypto.high_24h.toLocaleString()}</p>
+                <p>24h Low: $${crypto.low_24h.toLocaleString()}</p>
+                <p>Circulating Supply: ${crypto.circulating_supply.toLocaleString()} ${crypto.symbol.toUpperCase()}</p>
+            `;
+            modal.style.display = 'block';
+            await loadHistoricalData(crypto.id);
+        }
+
+        async function loadHistoricalData(coinId) {
+            try {
+                const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
+                    params: {
+                        vs_currency: 'usd',
+                        days: 30
+                    }
+                });
+                const prices = response.data.prices.map(price => ({
+                    x: new Date(price[0]),
+                    y: price[1]
+                }));
+                createChart(prices);
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+            }
+        }
+
+        function createChart(prices) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if (chart) {
+                chart.destroy();
+            }
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Price (USD)',
+                        data: prices,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        closeModal.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function filterAndSortCryptos() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const sortOption = sortSelect.value;
+
+            let filteredCryptos = allCryptos.filter(crypto => 
+                crypto.name.toLowerCase().includes(searchTerm) || 
+                crypto.symbol.toLowerCase().includes(searchTerm)
+            );
+
+            filteredCryptos.sort((a, b) => {
+                switch (sortOption) {
+                    case 'market_cap_desc':
+                        return b.market_cap - a.market_cap;
+                    case 'market_cap_asc':
+                        return a.market_cap - b.market_cap;
+                    case 'price_desc':
+                        return b.current_price - a.current_price;
+                    case 'price_asc':
+                        return a.current_price - b.current_price;
+                    case 'change_desc':
+                        return b.price_change_percentage_24h - a.price_change_percentage_24h;
+                    case 'change_asc':
+                        return a.price_change_percentage_24h - b.price_change_percentage_24h;
+                    default:
+                        return 0;
+                }
+            });
+
+            displayCryptos(filteredCryptos);
+        }
+
+        async function loadMoreCryptos() {
+            currentPage++;
+            const newCryptos = await fetchCryptoData(currentPage);
+            allCryptos = [...allCryptos, ...newCryptos];
+            displayCryptos(allCryptos);
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        function loadUserPreferences() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+        }
+
+        function initializeWebSocket() {
+            const symbols = allCryptos.map(crypto => crypto.symbol.toLowerCase() + 'usdt');
+            const streams = symbols.map(symbol => `${symbol}@trade`).join('/');
+            socket = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const symbol = data.data.s.slice(0, -4).toLowerCase();
+                const price = parseFloat(data.data.p);
+                updatePrice(symbol, price);
+            };
+
+            socket.onclose = () => {
+                console.log('WebSocket connection closed. Attempting to reconnect...');
+                setTimeout(initializeWebSocket, 5000);
+            };
+        }
+
+        function updatePrice(symbol, newPrice) {
+            const priceElement = document.getElementById(`price-${symbol}`);
+            const modalPriceElement = document.getElementById(`modal-price-${symbol}`);
+            if (priceElement) {
+                const oldPrice = parseFloat(priceElement.textContent.slice(1).replace(',', ''));
+                priceElement.textContent = `$${newPrice.toLocaleString()}`;
+                priceElement.classList.add('price-change');
+                priceElement.classList.toggle('price-up', newPrice > oldPrice);
+                priceElement.classList.toggle('price-down', newPrice < oldPrice);
+                setTimeout(() => priceElement.classList.remove('price-change'), 500);
+            }
+            if (modalPriceElement) {
+                modalPriceElement.textContent = newPrice.toLocaleString();
+            }
+        }
+
+        searchInput.addEventListener('input', filterAndSortCryptos);
+        sortSelect.addEventListener('change', filterAndSortCryptos);
+        loadMoreButton.addEventListener('click', loadMoreCryptos);
+
+        loadUserPreferences();
+        loadInitialData();
+    </script>
+</body>
+</html>
